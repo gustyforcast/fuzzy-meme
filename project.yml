@@ -1,0 +1,93 @@
+# XcodeGen project spec — generates the .xcodeproj from this file instead
+# of hand-editing it (or fighting merge conflicts on the binary-ish pbxproj
+# format). Run `xcodegen generate` on-device (needs Xcode command line
+# tools) after cloning, or as a CI step before build.
+#
+# Install: brew install xcodegen
+# Docs: https://github.com/yonaskolb/XcodeGen
+#
+# Two targets, not app-launch-kit's default single-iOS-target template,
+# because docs/ROADMAP.md is explicit: Phase 1 is Mac-first, Phase 2
+# extends to iPhone/iPad. Both targets exist from the start so Phase 0's
+# spikes (PHAsset, CloudKit, Vision) can run on whichever platform each
+# spike actually needs, without restructuring later.
+#
+# Deployment target is 27.0 on both platforms per docs/NFR.md's stated
+# "Minimum OS: iOS 27 / iPadOS 27 / macOS 27" requirement — but that's
+# still an OPEN item (docs/RISK_REGISTER.md #6: "not yet confirmed
+# against the target user's actual hardware/OS currency"). If that risk
+# resolves to a lower minimum, change it here, not just in the docs.
+#
+# bundleIdPrefix matches StillTime's existing com.timdeacon.* identifiers
+# (see app-launch-kit docs/02-design-system-guide.md).
+
+name: Verso
+options:
+  bundleIdPrefix: com.timdeacon
+  deploymentTarget:
+    iOS: "27.0"
+    macOS: "27.0"
+
+packages:
+  TimDeaconKit:
+    url: https://github.com/gustyforcast/TimDeaconKit
+    branch: main
+    # Swap the two lines above for a local path during active TimDeaconKit
+    # development: `path: ../TimDeaconKit`
+    # Note: TimDeaconKit's own Package.swift declares a lower platform
+    # floor (iOS 17 / macOS 14) than this app's 27.0 target — that's
+    # fine, a package's floor just has to be <= the consumer's target,
+    # not equal to it.
+
+targets:
+  Verso-Mac:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/Verso
+    dependencies:
+      - package: TimDeaconKit
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        DEVELOPMENT_TEAM: "" # fill in your Apple Developer Team ID
+        PRODUCT_BUNDLE_IDENTIFIER: com.timdeacon.verso
+
+  Verso-iOS:
+    type: application
+    platform: iOS
+    sources:
+      - Sources/Verso
+    dependencies:
+      - package: TimDeaconKit
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        DEVELOPMENT_TEAM: "" # fill in your Apple Developer Team ID
+        PRODUCT_BUNDLE_IDENTIFIER: com.timdeacon.verso
+
+  VersoTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/VersoTests
+    dependencies:
+      - target: Verso-Mac
+
+schemes:
+  Verso-Mac:
+    build:
+      targets:
+        Verso-Mac: all
+    test:
+      targets:
+        - VersoTests
+    run:
+      config: Debug
+
+  Verso-iOS:
+    build:
+      targets:
+        Verso-iOS: all
+    run:
+      config: Debug

@@ -1,0 +1,30 @@
+# Runs on every push/PR — cheap, Linux, no Xcode needed.
+# Covers any target that is pure Swift (no UIKit/SwiftUI/AppKit imports),
+# e.g. models, platform-agnostic view models, and the non-UI parts of a
+# shared design-system package. This is your first line of defence and
+# should catch most regressions for close to free — see docs/03-ci-testing.md.
+#
+# Assumes your logic code lives in a Swift Package (Package.swift at repo
+# root, or set `working-directory` below to its path). If your project is
+# Xcode-project-only with no SPM target, delete this workflow and rely on
+# build-and-testflight.yml alone.
+
+name: Logic Tests (Linux)
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+
+      - name: Run Swift Package tests
+        run: swift test --parallel
